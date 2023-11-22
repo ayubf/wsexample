@@ -1,4 +1,3 @@
 # wsexample
 
-Simple web server using websockets example with gorilla websocket
-
+Simple web server using websockets example written in Go using gorilla/websocket
