@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> %v - Home</title>
+</head>
+<body>
+    <script>
+        const addMessageToUI = (message, user) => {
+            const elem = document.createElement("p")
+            elem.textContent = `${user} : ${document.getElementById("messageInput").value}`;
+            document.getElementById("messageArea").appendChild(elem)
+        }
+        const sendUserName = async () => {
+            const username = document.getElementById("username").value;
+            let res = {
+                joined: false,
+                code: "",
+            }
+            await fetch("http://localhost:8080/createRoom", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        "Name": username
+                    }),
+            })
+            .then(i => i.json())
+            .then(data => res = data)
+
+            if (res.created != true) {
+                return 
+            }
+
+            const socket = new WebSocket(`ws://localhost:8080/joinRoom?room=${res.code}`)
+            console.log("Trying To Connect....")
+            socket.onopen = () => {
+                console.log("Connection successful")
+                socket.send(`Room #${res.code}`)
+            }
+
+            socket.onclose = (event) => {
+                console.log("Closing connection...", event)
+
+            }
+
+            socket.onerror = (err) => {
+                console.log("Socket Error", err)
+            }
+
+            const elem = document.createElement("input")
+            elem.id = "messageInput"
+            elem.setAttribute("type", "text")
+
+            document.getElementById("messageBox").append(elem)
+
+            document.getElementById("roomCreator").remove()
+
+            socket.onmessage = (event) => {
+                const message = `${username} :${document.getElementById("messageInput").value}`
+                socket.send(JSON.stringify({
+                    "Name": username,
+                    "Message": message
+                }))
+                addMessageToUI(message, username)
+                document.getElementById("messageInput").value = "";
+            }
+        
+
+            const btn = document.createElement("button")
+            btn.textContent = "Enter"
+            btn.onclick = socket.onmessage
+
+            document.getElementById("messageBox").append(btn)
+
+        }
+    </script>
+    <h1> Create A New Room</h1>
+        <div id="roomCreator">
+            <input type="text" id="username">
+            <button onclick="sendUserName()"> 
+                Create
+            </button>
+        </div>
+        <div id="messageArea">
+
+        </div>
+        <div id="messageBox">
+            
+        </div>
+</body>
+</html>
